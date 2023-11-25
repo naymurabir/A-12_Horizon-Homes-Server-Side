@@ -60,6 +60,31 @@ async function run() {
 
         const usersCollection = client.db("horizonHomesDB").collection("users")
 
+        // Use verify admin admin after verifyToken
+        const verifyAdmin = async (req, res, next) => {
+            const email = req.decoded?.email
+            const query = { email: email }
+            const user = await usersCollection.findOne(query)
+            const isAdmin = user?.role === 'admin'
+            if (!isAdmin) {
+                return res.status(403).send({ message: 'forbidden access' })
+            }
+            next()
+        }
+
+        // Use verify admin admin after verifyToken
+        const verifyAgent = async (req, res, next) => {
+            const email = req.decoded?.email
+            const query = { email: email }
+            const user = await usersCollection.findOne(query)
+            console.log(user);
+            const isAgent = user?.role === 'agent'
+            if (!isAgent) {
+                return res.status(403).send({ message: 'forbidden access' })
+            }
+            next()
+        }
+
         // ---------------------------------------------------------
         //JWT Related APIs
         app.post('/jwt', async (req, res) => {
@@ -86,7 +111,6 @@ async function run() {
         })
 
         // ---------------------------------------------------------
-
         //Users related APIs
         app.post('/users', async (req, res) => {
             const user = req.body
@@ -100,6 +124,70 @@ async function run() {
             }
         })
 
+        app.get('/users', verifyToken, verifyAdmin, async (req, res) => {
+            const cursor = usersCollection.find()
+            const result = await cursor.toArray()
+            res.send(result)
+        })
+
+        app.get('/users/admin/:email', verifyToken, async (req, res) => {
+            const email = req.params.email
+            if (email !== req.decoded.email) {
+                return res.status(403).send({ message: "unauthorized access" })
+            }
+            const query = { email: email }
+            const user = await usersCollection.findOne(query)
+            let admin = false
+            if (user) {
+                admin = user.role === 'admin'
+            }
+            res.send({ admin })
+        })
+
+        app.get('/users/agent/:email', verifyToken, async (req, res) => {
+            const email = req.params.email
+            if (email !== req.decoded.email) {
+                return res.status(403).send({ message: "unauthorized access" })
+            }
+            const query = { email: email }
+            const user = await usersCollection.findOne(query)
+            let agent = false
+            if (user) {
+                agent = user.role === 'agent'
+            }
+            res.send({ agent })
+        })
+
+        app.delete('/users/:id', verifyToken, verifyAdmin, async (req, res) => {
+            const id = req.params.id
+            const query = { _id: new ObjectId(id) }
+            const result = await usersCollection.deleteOne(query)
+            res.send(result)
+        })
+
+        app.patch('/users/admin/:id', verifyToken, verifyAdmin, async (req, res) => {
+            const id = req.params.id
+            const filter = { _id: new ObjectId(id) }
+            const updatedDoc = {
+                $set: {
+                    role: 'admin'
+                },
+            }
+            const result = await usersCollection.updateOne(filter, updatedDoc)
+            res.send(result)
+        })
+
+        app.patch('/users/agent/:id', verifyToken, verifyAdmin, async (req, res) => {
+            const id = req.params.id
+            const filter = { _id: new ObjectId(id) }
+            const updatedDoc = {
+                $set: {
+                    role: 'agent'
+                },
+            }
+            const result = await usersCollection.updateOne(filter, updatedDoc)
+            res.send(result)
+        })
 
         // Send a ping to confirm a successful connection
         await client.db("admin").command({ ping: 1 });
