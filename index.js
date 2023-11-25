@@ -60,6 +60,8 @@ async function run() {
 
         const usersCollection = client.db("horizonHomesDB").collection("users")
 
+        const propertiesCollection = client.db("horizonHomesDB").collection("properties")
+
         // Use verify admin admin after verifyToken
         const verifyAdmin = async (req, res, next) => {
             const email = req.decoded?.email
@@ -85,8 +87,8 @@ async function run() {
             next()
         }
 
-        // ---------------------------------------------------------
-        //JWT Related APIs
+        //------------------JWT Related APIs------------------------
+
         app.post('/jwt', async (req, res) => {
             const user = req.body
             const token = jwt.sign(user, process.env.ACCESS_TOKEN_SECRET, { expiresIn: '1h' })
@@ -110,8 +112,7 @@ async function run() {
                 .send({ status: true })
         })
 
-        // ---------------------------------------------------------
-        //Users related APIs
+        //------------------Users related APIs-------------------
         app.post('/users', async (req, res) => {
             const user = req.body
             const query = { email: user.email }
@@ -188,6 +189,14 @@ async function run() {
             const result = await usersCollection.updateOne(filter, updatedDoc)
             res.send(result)
         })
+
+        //------------------Properties Related APIs-------------------
+        app.post('/properties', async (req, res) => {
+            const newProperty = req.body
+            const result = await propertiesCollection.insertOne(newProperty)
+            res.send(result)
+        })
+
 
         // Send a ping to confirm a successful connection
         await client.db("admin").command({ ping: 1 });
