@@ -64,6 +64,8 @@ async function run() {
 
         const allPropertiesCollection = client.db("horizonHomesDB").collection("allProperties")
 
+        const wishlistsCollection = client.db("horizonHomesDB").collection("wishlists")
+
         // Use verify admin admin after verifyToken
         const verifyAdmin = async (req, res, next) => {
             const email = req.decoded?.email
@@ -237,6 +239,25 @@ async function run() {
             res.send(result)
         })
 
+        app.get('/allProperties', async (req, res) => {
+            const cursor = allPropertiesCollection.find()
+            const result = await cursor.toArray()
+            res.send(result)
+        })
+
+        app.get('/propertyDetails/:id', async (req, res) => {
+            const id = req.params.id
+            const query = { _id: new ObjectId(id) }
+            const result = await allPropertiesCollection.findOne(query)
+            res.send(result)
+        })
+
+        //----------------Wishlist Related APIs----------------
+        app.post('/wishlists', async (req, res) => {
+            const newWishlist = req.body
+            const result = await wishlistsCollection.insertOne(newWishlist)
+            res.send(result)
+        })
 
 
         // Send a ping to confirm a successful connection
