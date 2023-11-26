@@ -62,6 +62,8 @@ async function run() {
 
         const propertiesCollection = client.db("horizonHomesDB").collection("properties")
 
+        const allPropertiesCollection = client.db("horizonHomesDB").collection("allProperties")
+
         // Use verify admin admin after verifyToken
         const verifyAdmin = async (req, res, next) => {
             const email = req.decoded?.email
@@ -196,6 +198,45 @@ async function run() {
             const result = await propertiesCollection.insertOne(newProperty)
             res.send(result)
         })
+
+        app.get('/properties', verifyToken, verifyAdmin, async (req, res) => {
+            const cursor = propertiesCollection.find()
+            const result = await cursor.toArray()
+            res.send(result)
+        })
+
+        app.put('/properties', async (req, res) => {
+            const filter = { _id: new ObjectId(req.query.id) }
+            const updatedDoc = {
+                $set: {
+                    status: "verified"
+                }
+            }
+            const result = await propertiesCollection.updateOne(filter, updatedDoc)
+            res.send(result)
+        })
+
+        app.put('/properties/reject', async (req, res) => {
+            const filter = { _id: new ObjectId(req.query.id) }
+            const updatedDoc = {
+                $set: {
+                    status: "rejected"
+                }
+            }
+            const result = await propertiesCollection.updateOne(filter, updatedDoc)
+            res.send(result)
+        })
+
+        //----------------All Properties Related APIs----------------
+        app.post('/allProperties', async (req, res) => {
+            const newProperty = req.body
+            if (newProperty) {
+                newProperty.status = "verified"
+            }
+            const result = await allPropertiesCollection.insertOne(newProperty)
+            res.send(result)
+        })
+
 
 
         // Send a ping to confirm a successful connection
