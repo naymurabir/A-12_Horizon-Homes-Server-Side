@@ -309,6 +309,19 @@ async function run() {
             res.send(result)
         })
 
+        app.get('/wishlists', verifyToken, async (req, res) => {
+            const cursor = wishlistsCollection.find()
+            const result = await cursor.toArray()
+            res.send(result)
+        })
+
+        app.delete('/wishlists/:id', verifyToken, async (req, res) => {
+            const id = req.params.id
+            const query = { _id: new ObjectId(id) }
+            const result = await wishlistsCollection.deleteOne(query)
+            res.send(result)
+        })
+
 
         //------------------Reviews Related APIs------------------
         app.post('/reviews', async (req, res) => {
@@ -357,7 +370,7 @@ async function run() {
             res.send(result)
         })
 
-        app.get('/latestReviews', async (req, res) => {
+        app.get('/latestReviews', verifyToken, async (req, res) => {
             const result = await reviewsCollection.find().sort({ _id: -1 }).limit(4).toArray()
             res.send(result)
         })
