@@ -221,6 +221,34 @@ async function run() {
             res.send(result)
         })
 
+        app.get('/updateProperty/:id', async (req, res) => {
+            const id = req.params.id
+            const query = { _id: new ObjectId(id) }
+            const result = await propertiesCollection.findOne(query)
+            res.send(result)
+        })
+
+        app.put('/updateProperty/:id', verifyToken, async (req, res) => {
+            const id = req.params.id;
+            const propertyUpdate = req.body
+            const filter = { _id: new ObjectId(id) }
+            const options = { upsert: true }
+            const updateDoc = {
+                $set: {
+                    title: propertyUpdate.title,
+                    location: propertyUpdate.location,
+                    agent_name: propertyUpdate.agent_name,
+                    email: propertyUpdate.email,
+                    price_range: propertyUpdate.price_range,
+                    image: propertyUpdate.image,
+                    details: propertyUpdate.details,
+
+                }
+            }
+            const result = await propertiesCollection.updateOne(filter, updateDoc, options)
+            res.send(result)
+        })
+
         app.delete('/myAddedProperties/:id', verifyToken, async (req, res) => {
             const id = req.params.id
             const query = { _id: new ObjectId(id) }
