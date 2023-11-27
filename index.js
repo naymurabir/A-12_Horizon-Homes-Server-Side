@@ -131,7 +131,7 @@ async function run() {
             }
         })
 
-        app.get('/users', verifyToken, verifyAdmin, async (req, res) => {
+        app.get('/users', verifyToken, async (req, res) => {
             const cursor = usersCollection.find()
             const result = await cursor.toArray()
             res.send(result)
@@ -165,14 +165,14 @@ async function run() {
             res.send({ agent })
         })
 
-        app.delete('/users/:id', verifyToken, verifyAdmin, async (req, res) => {
+        app.delete('/users/:id', verifyToken, async (req, res) => {
             const id = req.params.id
             const query = { _id: new ObjectId(id) }
             const result = await usersCollection.deleteOne(query)
             res.send(result)
         })
 
-        app.patch('/users/admin/:id', verifyToken, verifyAdmin, async (req, res) => {
+        app.patch('/users/admin/:id', verifyToken, async (req, res) => {
             const id = req.params.id
             const filter = { _id: new ObjectId(id) }
             const updatedDoc = {
@@ -184,7 +184,7 @@ async function run() {
             res.send(result)
         })
 
-        app.patch('/users/agent/:id', verifyToken, verifyAdmin, async (req, res) => {
+        app.patch('/users/agent/:id', verifyToken, async (req, res) => {
             const id = req.params.id
             const filter = { _id: new ObjectId(id) }
             const updatedDoc = {
@@ -203,7 +203,7 @@ async function run() {
             res.send(result)
         })
 
-        app.get('/properties', verifyToken, verifyAdmin, async (req, res) => {
+        app.get('/properties', verifyToken, async (req, res) => {
             const cursor = propertiesCollection.find()
             const result = await cursor.toArray()
             res.send(result)
@@ -256,7 +256,7 @@ async function run() {
             res.send(result)
         })
 
-        app.put('/properties', async (req, res) => {
+        app.put('/properties', verifyToken, async (req, res) => {
             const filter = { _id: new ObjectId(req.query.id) }
             console.log(filter);
             const updatedDoc = {
@@ -268,7 +268,7 @@ async function run() {
             res.send(result)
         })
 
-        app.put('/properties/reject', async (req, res) => {
+        app.put('/properties/reject', verifyToken, async (req, res) => {
             const filter = { _id: new ObjectId(req.query.id) }
             const updatedDoc = {
                 $set: {
@@ -317,7 +317,7 @@ async function run() {
             res.send(result)
         })
 
-        app.get('/reviewsAll', verifyToken, verifyAdmin, async (req, res) => {
+        app.get('/reviewsAll', verifyToken, async (req, res) => {
             const cursor = reviewsCollection.find()
             const result = await cursor.toArray()
             res.send(result)
@@ -357,6 +357,10 @@ async function run() {
             res.send(result)
         })
 
+        app.get('/latestReviews', async (req, res) => {
+            const result = await reviewsCollection.find().sort({ _id: -1 }).limit(4).toArray()
+            res.send(result)
+        })
 
 
 
