@@ -66,6 +66,8 @@ async function run() {
 
         const wishlistsCollection = client.db("horizonHomesDB").collection("wishlists")
 
+        const reviewsCollection = client.db("horizonHomesDB").collection("reviews")
+
         // Use verify admin admin after verifyToken
         const verifyAdmin = async (req, res, next) => {
             const email = req.decoded?.email
@@ -209,6 +211,7 @@ async function run() {
 
         app.put('/properties', async (req, res) => {
             const filter = { _id: new ObjectId(req.query.id) }
+            console.log(filter);
             const updatedDoc = {
                 $set: {
                     status: "verified"
@@ -252,12 +255,49 @@ async function run() {
             res.send(result)
         })
 
-        //----------------Wishlist Related APIs----------------
+        //-------------------Wishlist Related APIs----------------
         app.post('/wishlists', async (req, res) => {
             const newWishlist = req.body
             const result = await wishlistsCollection.insertOne(newWishlist)
             res.send(result)
         })
+
+
+        //------------------Reviews Related APIs------------------
+        app.post('/reviews', async (req, res) => {
+            const newReview = req.body
+            const result = await reviewsCollection.insertOne(newReview)
+            res.send(result)
+        })
+
+        app.get('/reviews', verifyToken, async (req, res) => {
+            if (req.query?.email !== req.decoded?.email) {
+                return res.status(403).send({ message: 'Forbidden access' })
+            }
+            let query = {}
+            if (req.query?.email) {
+                query = { email: req.query?.email }
+            }
+            const result = await reviewsCollection.find(query).toArray()
+            res.send(result)
+        })
+
+        app.delete('/reviews/:id', verifyToken, async (req, res) => {
+            const id = req.params.id
+            const query = { _id: new ObjectId(id) }
+            const result = await reviewsCollection.deleteOne(query)
+            res.send(result)
+        })
+
+        // app.get('/reviews/title', async (req, res) => {
+        //     const title = req.query.title
+        //     const query = { title: title }
+        //     console.log('Query', query);
+        //     const result = await reviewsCollection.find(query).toArray()
+        //     res.send(result)
+        // })
+
+
 
 
         // Send a ping to confirm a successful connection
