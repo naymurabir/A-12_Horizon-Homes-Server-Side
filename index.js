@@ -209,6 +209,25 @@ async function run() {
             res.send(result)
         })
 
+        app.get('/myAddedProperties', verifyToken, async (req, res) => {
+            if (req.query?.email !== req.decoded?.email) {
+                return res.status(403).send({ message: 'Forbidden access' })
+            }
+            let query = {}
+            if (req.query?.email) {
+                query = { email: req.query?.email }
+            }
+            const result = await propertiesCollection.find(query).toArray()
+            res.send(result)
+        })
+
+        app.delete('/myAddedProperties/:id', verifyToken, async (req, res) => {
+            const id = req.params.id
+            const query = { _id: new ObjectId(id) }
+            const result = await propertiesCollection.deleteOne(query)
+            res.send(result)
+        })
+
         app.put('/properties', async (req, res) => {
             const filter = { _id: new ObjectId(req.query.id) }
             console.log(filter);
