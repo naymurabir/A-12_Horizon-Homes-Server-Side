@@ -270,6 +270,12 @@ async function run() {
             res.send(result)
         })
 
+        app.get('/reviewsAll', verifyToken, verifyAdmin, async (req, res) => {
+            const cursor = reviewsCollection.find()
+            const result = await cursor.toArray()
+            res.send(result)
+        })
+
         app.get('/reviews', verifyToken, async (req, res) => {
             if (req.query?.email !== req.decoded?.email) {
                 return res.status(403).send({ message: 'Forbidden access' })
@@ -282,20 +288,27 @@ async function run() {
             res.send(result)
         })
 
-        app.delete('/reviews/:id', verifyToken, async (req, res) => {
+        app.get('/reviews/:title', async (req, res) => {
+            const title = req.params.title
+            const query = { title: title }
+            console.log('Query', query);
+            const result = await reviewsCollection.find(query).toArray()
+            res.send(result)
+        })
+
+        app.delete('/reviewsAll/:id', verifyToken, async (req, res) => {
             const id = req.params.id
             const query = { _id: new ObjectId(id) }
             const result = await reviewsCollection.deleteOne(query)
             res.send(result)
         })
 
-        // app.get('/reviews/title', async (req, res) => {
-        //     const title = req.query.title
-        //     const query = { title: title }
-        //     console.log('Query', query);
-        //     const result = await reviewsCollection.find(query).toArray()
-        //     res.send(result)
-        // })
+        app.delete('/reviews/:id', verifyToken, async (req, res) => {
+            const id = req.params.id
+            const query = { _id: new ObjectId(id) }
+            const result = await reviewsCollection.deleteOne(query)
+            res.send(result)
+        })
 
 
 
