@@ -399,6 +399,35 @@ async function run() {
         })
 
 
+        app.get('/requestedProperties', verifyToken, async (req, res) => {
+            if (req.query?.email !== req.decoded?.email) {
+                return res.status(403).send({ message: 'Forbidden access' })
+            }
+            let query = {}
+            if (req.query?.email) {
+                query = {
+                    agent_email: req.query?.email
+                }
+            }
+            const result = await offeredPropertiesCollection.find(query).toArray()
+            res.send(result)
+        })
+
+        app.get('/propertiesBaught', verifyToken, async (req, res) => {
+            if (req.query?.email !== req.decoded?.email) {
+                return res.status(403).send({ message: 'Forbidden access' })
+            }
+            let query = {}
+            if (req.query?.email) {
+                query = {
+                    buyer_email: req.query?.email
+                }
+            }
+            const result = await offeredPropertiesCollection.find(query).toArray()
+            res.send(result)
+        })
+
+
 
         // Send a ping to confirm a successful connection
         await client.db("admin").command({ ping: 1 });
