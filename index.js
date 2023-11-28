@@ -68,6 +68,8 @@ async function run() {
 
         const reviewsCollection = client.db("horizonHomesDB").collection("reviews")
 
+        const offeredPropertiesCollection = client.db("horizonHomesDB").collection("offeredProperties")
+
         // Use verify admin admin after verifyToken
         const verifyAdmin = async (req, res, next) => {
             const email = req.decoded?.email
@@ -310,8 +312,21 @@ async function run() {
         })
 
         app.get('/wishlists', verifyToken, async (req, res) => {
-            const cursor = wishlistsCollection.find()
-            const result = await cursor.toArray()
+            if (req.query?.email !== req.decoded?.email) {
+                return res.status(403).send({ message: 'Forbidden access' })
+            }
+            let query = {}
+            if (req.query?.email) {
+                query = { email: req.query?.email }
+            }
+            const result = await wishlistsCollection.find(query).toArray()
+            res.send(result)
+        })
+
+        app.get('/makeOffer/:id', async (req, res) => {
+            const id = req.params.id
+            const query = { _id: new ObjectId(id) }
+            const result = await wishlistsCollection.findOne(query)
             res.send(result)
         })
 
@@ -370,8 +385,16 @@ async function run() {
             res.send(result)
         })
 
-        app.get('/latestReviews', verifyToken, async (req, res) => {
+        app.get('/latestReviews', async (req, res) => {
             const result = await reviewsCollection.find().sort({ _id: -1 }).limit(4).toArray()
+            res.send(result)
+        })
+
+
+        //-----------------Offered Properties Related APIs------------
+        app.post('/offeredProperties', async (req, res) => {
+            const newOfferCategory = req.body
+            const result = await offeredPropertiesCollection.insertOne(newOfferCategory)
             res.send(result)
         })
 
