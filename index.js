@@ -428,6 +428,32 @@ async function run() {
         })
 
 
+        app.put('/requestedProperty', verifyToken, async (req, res) => {
+            const filter = { _id: new ObjectId(req.query.id) }
+            console.log(filter);
+            const updatedDoc = {
+                $set: {
+                    status: "accepted"
+                }
+            }
+            const result = await offeredPropertiesCollection.updateOne(filter, updatedDoc)
+            res.send(result)
+        })
+
+        app.put('/requestedProperty/reject', verifyToken, async (req, res) => {
+            const filter = { _id: new ObjectId(req.query.id) }
+            const updatedDoc = {
+                $set: {
+                    status: "rejected"
+                }
+            }
+            const result = await offeredPropertiesCollection.updateOne(filter, updatedDoc)
+            res.send(result)
+        })
+
+
+
+
 
         // Send a ping to confirm a successful connection
         await client.db("admin").command({ ping: 1 });
