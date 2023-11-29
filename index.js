@@ -36,7 +36,7 @@ const logger = async (req, res, next) => {
 
 const verifyToken = async (req, res, next) => {
     const token = req.cookies.token
-    console.log("The desired token:", token);
+    // console.log("The desired token:", token);
 
     if (!token) {
         return res.status(401).send({ message: "Unauthorized" })
@@ -46,7 +46,7 @@ const verifyToken = async (req, res, next) => {
         if (err) {
             return res.status(401).send({ message: "Unauthorized" })
         }
-        console.log("The value of token:", decoded);
+        // console.log("The value of token:", decoded);
         req.decoded = decoded
         next()
     })
