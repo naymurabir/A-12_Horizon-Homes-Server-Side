@@ -1,9 +1,10 @@
 const express = require('express');
 const cors = require('cors');
-const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 require('dotenv').config()
 var cookieParser = require('cookie-parser')
 var jwt = require('jsonwebtoken');
+const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY)
+const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 const app = express()
 const port = process.env.PORT || 5000;
 
@@ -69,6 +70,8 @@ async function run() {
         const reviewsCollection = client.db("horizonHomesDB").collection("reviews")
 
         const offeredPropertiesCollection = client.db("horizonHomesDB").collection("offeredProperties")
+
+        const paymentsCollection = client.db("horizonHomesDB").collection("payments")
 
         // Use verify admin admin after verifyToken
         const verifyAdmin = async (req, res, next) => {
@@ -451,6 +454,37 @@ async function run() {
             res.send(result)
         })
 
+        //After a successful payment
+        app.put('/requestedProperty/bought', verifyToken, async (req, res) => {
+            const filter = { _id: new ObjectId(req.query.id) }
+            const updatedDoc = {
+                $set: {
+                    status: "bought"
+                }
+            }
+            const result = await offeredPropertiesCollection.updateOne(filter, updatedDoc)
+            res.send(result)
+        })
+
+
+        //------------------Payments Related APIs--------------------
+        app.post('/create-payment-intent', async (req, res) => {
+            const { price } = req.body
+            const amount = parseInt(price * 100)
+            const paymentIntent = await stripe.paymentIntents.create({
+                amount: amount,
+                currency: "usd",
+                payment_method_types: ['card']
+            })
+            res.send({
+                clientSecret: paymentIntent.client_secret,
+            });
+        })
+
+        app.post("/payments", async (req, res) => {
+            const newPayment = await paymentsCollection.insertOne(req.body)
+            res.send(newPayment)
+        })
 
 
 
