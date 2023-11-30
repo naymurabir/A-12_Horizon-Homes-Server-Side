@@ -494,6 +494,21 @@ async function run() {
         });
 
 
+        app.get('/soldProperties', verifyToken, async (req, res) => {
+            if (req.query?.email !== req.decoded?.email) {
+                return res.status(403).send({ message: 'Forbidden access' })
+            }
+            let query = {}
+            if (req.query?.email) {
+                query = {
+                    agent_email: req.query?.email
+                }
+            }
+            const result = await paymentsCollection.find(query).toArray()
+            res.send(result)
+        })
+
+
 
 
         // Send a ping to confirm a successful connection
