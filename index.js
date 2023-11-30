@@ -201,6 +201,18 @@ async function run() {
             res.send(result)
         })
 
+        app.patch('/users/fraud/:id', verifyToken, async (req, res) => {
+            const id = req.params.id
+            const filter = { _id: new ObjectId(id) }
+            const updatedDoc = {
+                $set: {
+                    role: 'fraud'
+                },
+            }
+            const result = await usersCollection.updateOne(filter, updatedDoc)
+            res.send(result)
+        })
+
         //------------------Properties Related APIs-------------------
         app.post('/properties', async (req, res) => {
             const newProperty = req.body
