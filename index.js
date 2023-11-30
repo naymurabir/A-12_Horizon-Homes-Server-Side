@@ -1,7 +1,6 @@
 const express = require('express');
 const cors = require('cors');
 require('dotenv').config()
-var cookieParser = require('cookie-parser')
 var jwt = require('jsonwebtoken');
 const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY)
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
@@ -9,12 +8,8 @@ const app = express()
 const port = process.env.PORT || 5000;
 
 //Middleware 
-app.use(cors({
-    origin: ['http://localhost:5173'],
-    credentials: true
-}))
+app.use(cors())
 app.use(express.json())
-app.use(cookieParser())
 
 
 //Database
@@ -29,35 +24,11 @@ const client = new MongoClient(uri, {
     }
 });
 
-// Custom Middleware 
-const logger = async (req, res, next) => {
-    console.log("Called:", req.host, req.originalUrl);
-    next()
-}
-
-const verifyToken = async (req, res, next) => {
-    const token = req.cookies.token
-    // console.log("The desired token:", token);
-
-    if (!token) {
-        return res.status(401).send({ message: "Unauthorized" })
-    }
-
-    jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, (err, decoded) => {
-        if (err) {
-            return res.status(401).send({ message: "Unauthorized" })
-        }
-        // console.log("The value of token:", decoded);
-        req.decoded = decoded
-        next()
-    })
-
-}
 
 async function run() {
     try {
         // Connect the client to the server	(optional starting in v4.7)
-        await client.connect();
+
 
         const usersCollection = client.db("horizonHomesDB").collection("users")
 
@@ -73,7 +44,6 @@ async function run() {
 
         const paymentsCollection = client.db("horizonHomesDB").collection("payments")
 
-        // Use verify admin admin after verifyToken
         const verifyAdmin = async (req, res, next) => {
             const email = req.decoded?.email
             const query = { email: email }
@@ -85,7 +55,6 @@ async function run() {
             next()
         }
 
-        // Use verify admin admin after verifyToken
         const verifyAgent = async (req, res, next) => {
             const email = req.decoded?.email
             const query = { email: email }
@@ -97,31 +66,6 @@ async function run() {
             }
             next()
         }
-
-        //------------------JWT Related APIs------------------------
-
-        app.post('/jwt', async (req, res) => {
-            const user = req.body
-            const token = jwt.sign(user, process.env.ACCESS_TOKEN_SECRET, { expiresIn: '1h' })
-            res.cookie('token', token, {
-                httpOnly: true,
-                // secure: false,
-                // sameSite: 'none'
-
-            }).send({ success: true })
-        })
-
-        //Remove token after logout the user
-        app.post('/logout', async (req, res) => {
-            const user = req.body
-            console.log("User: ", user);
-            res.clearCookie('token', {
-                maxAge: 0,
-                // secure: process.env.NODE_ENV === 'production' ? true : false,
-                // sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'strict',
-            })
-                .send({ status: true })
-        })
 
         //------------------Users related APIs-------------------
         app.post('/users', async (req, res) => {
@@ -136,17 +80,14 @@ async function run() {
             }
         })
 
-        app.get('/users', verifyToken, async (req, res) => {
+        app.get('/users', async (req, res) => {
             const cursor = usersCollection.find()
             const result = await cursor.toArray()
             res.send(result)
         })
 
-        app.get('/users/admin/:email', verifyToken, async (req, res) => {
+        app.get('/users/admin/:email', async (req, res) => {
             const email = req.params.email
-            if (email !== req.decoded.email) {
-                return res.status(403).send({ message: "unauthorized access" })
-            }
             const query = { email: email }
             const user = await usersCollection.findOne(query)
             let admin = false
@@ -156,11 +97,8 @@ async function run() {
             res.send({ admin })
         })
 
-        app.get('/users/agent/:email', verifyToken, async (req, res) => {
+        app.get('/users/agent/:email', async (req, res) => {
             const email = req.params.email
-            if (email !== req.decoded.email) {
-                return res.status(403).send({ message: "unauthorized access" })
-            }
             const query = { email: email }
             const user = await usersCollection.findOne(query)
             let agent = false
@@ -170,14 +108,14 @@ async function run() {
             res.send({ agent })
         })
 
-        app.delete('/users/:id', verifyToken, async (req, res) => {
+        app.delete('/users/:id', async (req, res) => {
             const id = req.params.id
             const query = { _id: new ObjectId(id) }
             const result = await usersCollection.deleteOne(query)
             res.send(result)
         })
 
-        app.patch('/users/admin/:id', verifyToken, async (req, res) => {
+        app.patch('/users/admin/:id', async (req, res) => {
             const id = req.params.id
             const filter = { _id: new ObjectId(id) }
             const updatedDoc = {
@@ -189,7 +127,7 @@ async function run() {
             res.send(result)
         })
 
-        app.patch('/users/agent/:id', verifyToken, async (req, res) => {
+        app.patch('/users/agent/:id', async (req, res) => {
             const id = req.params.id
             const filter = { _id: new ObjectId(id) }
             const updatedDoc = {
@@ -201,7 +139,7 @@ async function run() {
             res.send(result)
         })
 
-        app.patch('/users/fraud/:id', verifyToken, async (req, res) => {
+        app.patch('/users/fraud/:id', async (req, res) => {
             const id = req.params.id
             const filter = { _id: new ObjectId(id) }
             const updatedDoc = {
@@ -220,16 +158,13 @@ async function run() {
             res.send(result)
         })
 
-        app.get('/properties', verifyToken, async (req, res) => {
+        app.get('/properties', async (req, res) => {
             const cursor = propertiesCollection.find()
             const result = await cursor.toArray()
             res.send(result)
         })
 
-        app.get('/myAddedProperties', verifyToken, async (req, res) => {
-            if (req.query?.email !== req.decoded?.email) {
-                return res.status(403).send({ message: 'Forbidden access' })
-            }
+        app.get('/myAddedProperties', async (req, res) => {
             let query = {}
             if (req.query?.email) {
                 query = { email: req.query?.email }
@@ -245,7 +180,7 @@ async function run() {
             res.send(result)
         })
 
-        app.put('/updateProperty/:id', verifyToken, async (req, res) => {
+        app.put('/updateProperty/:id', async (req, res) => {
             const id = req.params.id;
             const propertyUpdate = req.body
             const filter = { _id: new ObjectId(id) }
@@ -266,14 +201,14 @@ async function run() {
             res.send(result)
         })
 
-        app.delete('/myAddedProperties/:id', verifyToken, async (req, res) => {
+        app.delete('/myAddedProperties/:id', async (req, res) => {
             const id = req.params.id
             const query = { _id: new ObjectId(id) }
             const result = await propertiesCollection.deleteOne(query)
             res.send(result)
         })
 
-        app.put('/properties', verifyToken, async (req, res) => {
+        app.put('/properties', async (req, res) => {
             const filter = { _id: new ObjectId(req.query.id) }
             console.log(filter);
             const updatedDoc = {
@@ -285,7 +220,7 @@ async function run() {
             res.send(result)
         })
 
-        app.put('/properties/reject', verifyToken, async (req, res) => {
+        app.put('/properties/reject', async (req, res) => {
             const filter = { _id: new ObjectId(req.query.id) }
             const updatedDoc = {
                 $set: {
@@ -326,10 +261,7 @@ async function run() {
             res.send(result)
         })
 
-        app.get('/wishlists', verifyToken, async (req, res) => {
-            if (req.query?.email !== req.decoded?.email) {
-                return res.status(403).send({ message: 'Forbidden access' })
-            }
+        app.get('/wishlists', async (req, res) => {
             let query = {}
             if (req.query?.email) {
                 query = { email: req.query?.email }
@@ -345,7 +277,7 @@ async function run() {
             res.send(result)
         })
 
-        app.delete('/wishlists/:id', verifyToken, async (req, res) => {
+        app.delete('/wishlists/:id', async (req, res) => {
             const id = req.params.id
             const query = { _id: new ObjectId(id) }
             const result = await wishlistsCollection.deleteOne(query)
@@ -360,16 +292,13 @@ async function run() {
             res.send(result)
         })
 
-        app.get('/reviewsAll', verifyToken, async (req, res) => {
+        app.get('/reviewsAll', async (req, res) => {
             const cursor = reviewsCollection.find()
             const result = await cursor.toArray()
             res.send(result)
         })
 
-        app.get('/reviews', verifyToken, async (req, res) => {
-            if (req.query?.email !== req.decoded?.email) {
-                return res.status(403).send({ message: 'Forbidden access' })
-            }
+        app.get('/reviews', async (req, res) => {
             let query = {}
             if (req.query?.email) {
                 query = { email: req.query?.email }
@@ -386,14 +315,14 @@ async function run() {
             res.send(result)
         })
 
-        app.delete('/reviewsAll/:id', verifyToken, async (req, res) => {
+        app.delete('/reviewsAll/:id', async (req, res) => {
             const id = req.params.id
             const query = { _id: new ObjectId(id) }
             const result = await reviewsCollection.deleteOne(query)
             res.send(result)
         })
 
-        app.delete('/reviews/:id', verifyToken, async (req, res) => {
+        app.delete('/reviews/:id', async (req, res) => {
             const id = req.params.id
             const query = { _id: new ObjectId(id) }
             const result = await reviewsCollection.deleteOne(query)
@@ -414,10 +343,7 @@ async function run() {
         })
 
 
-        app.get('/requestedProperties', verifyToken, async (req, res) => {
-            if (req.query?.email !== req.decoded?.email) {
-                return res.status(403).send({ message: 'Forbidden access' })
-            }
+        app.get('/requestedProperties', async (req, res) => {
             let query = {}
             if (req.query?.email) {
                 query = {
@@ -428,10 +354,7 @@ async function run() {
             res.send(result)
         })
 
-        app.get('/propertiesBaught', verifyToken, async (req, res) => {
-            if (req.query?.email !== req.decoded?.email) {
-                return res.status(403).send({ message: 'Forbidden access' })
-            }
+        app.get('/propertiesBaught', async (req, res) => {
             let query = {}
             if (req.query?.email) {
                 query = {
@@ -443,7 +366,7 @@ async function run() {
         })
 
 
-        app.put('/requestedProperty', verifyToken, async (req, res) => {
+        app.put('/requestedProperty', async (req, res) => {
             const filter = { _id: new ObjectId(req.query.id) }
             console.log(filter);
             const updatedDoc = {
@@ -455,7 +378,7 @@ async function run() {
             res.send(result)
         })
 
-        app.put('/requestedProperty/reject', verifyToken, async (req, res) => {
+        app.put('/requestedProperty/reject', async (req, res) => {
             const filter = { _id: new ObjectId(req.query.id) }
             const updatedDoc = {
                 $set: {
@@ -467,7 +390,7 @@ async function run() {
         })
 
         //After a successful payment
-        app.put('/requestedProperty/bought', verifyToken, async (req, res) => {
+        app.put('/requestedProperty/bought', async (req, res) => {
             const filter = { _id: new ObjectId(req.query.id) }
             const updatedDoc = {
                 $set: {
@@ -506,10 +429,7 @@ async function run() {
         });
 
 
-        app.get('/soldProperties', verifyToken, async (req, res) => {
-            if (req.query?.email !== req.decoded?.email) {
-                return res.status(403).send({ message: 'Forbidden access' })
-            }
+        app.get('/soldProperties', async (req, res) => {
             let query = {}
             if (req.query?.email) {
                 query = {
@@ -524,7 +444,7 @@ async function run() {
 
 
         // Send a ping to confirm a successful connection
-        await client.db("admin").command({ ping: 1 });
+        // await client.db("admin").command({ ping: 1 });
         console.log("Pinged your deployment. You successfully connected to MongoDB!");
     } finally {
         // Ensures that the client will close when you finish/error
