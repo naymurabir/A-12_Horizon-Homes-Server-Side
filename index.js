@@ -486,6 +486,13 @@ async function run() {
             res.send(newPayment)
         })
 
+        app.get('/boughtProperty/:id', async (req, res) => {
+            const id = req.params.id;
+            const filter = { id: id };
+            const result = await paymentsCollection.findOne(filter);
+            res.send(result);
+        });
+
 
 
 
